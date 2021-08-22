@@ -1,0 +1,194 @@
+
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        width: 100vw;
+        overflow: hidden;
+    }
+    .world {
+        height: 100vh;
+        width: 200vw;
+    }
+    .background {
+        height: 100vh;
+        width: 200vw;
+        opacity: 0.8;
+        background-color: #e5e5f7;
+        background-image: url("bg.png");
+        background-size: 50%;
+    }
+    .stone {
+        width: 100px;
+        display: none;
+    }
+    .hero {
+        font-size: 72px;
+        z-index: 1;
+    }
+    .object {
+        position: absolute; 
+        bottom: 0;
+    }
+    .overlay {
+        position: absolute;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        display: none;
+        flex-direction: column;
+        font-size: 72px;
+        color: orange;
+        background-color: rgba(255,255,255,0.8);
+    }
+    .overlay.visible {
+        display: flex;
+    }
+    .restart {
+        display: block;
+        margin: 20px;
+        padding: 40px;
+        background-color: orange;
+        color: white;
+        border: none;
+        border-radius: 100%;
+        font-size: 36px;
+        cursor: pointer;
+    }
+    .points {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+</style>
+
+<div class="hero object" id="hero">
+    👻
+</div>
+<div class="world object" id="world">
+    <div class="background object" id="background"></div>
+    <img class="stone object" id="stone" src="stone.png"/>
+</div>
+<div class="points" id="points"></div>
+<div class="overlay" id="overlay">
+    Бабах!
+    <button class="restart" id="restart_button">Попробовать ещё</button>
+</div>
+
+<script>
+    let hero = document.getElementById('hero');
+    let stone = document.getElementById('stone');
+    let world = document.getElementById('world');
+    let overlay = document.getElementById('overlay');
+    let background = document.getElementById('background');
+    let restartButton = document.getElementById('restart_button');
+    let pointsElement = document.getElementById('points');
+    bottom = 0;
+    speed = 0;
+    frame = 0;
+    worldSpeed = 5;
+    worldMoved = 0;
+    points = -1;
+    stopped = false;
+
+    let pause = () => {
+        stopped = true;
+    }
+
+    let reset = () => { // сбрасывает состояние
+        bottom = 0;
+        speed = 0;
+        frame = 0;
+        worldSpeed = 5;
+        worldMoved = 0;
+        points = -1;
+        stopped = false;
+    }
+
+    let intersects = (r1, r2) => {
+        let result = (r2.x < r1.x + r1.width && r2.x + r2.width > r1.x) && (r1.y < r2.y + r2.height && r1.y + r1.width > r2.y); // проверяем пересекаются ли координаты
+        return result; // возвращаем результат
+    }
+
+    let isBehind = (r) => {
+        if ((r.x + r.width) < 0) {
+            console.log((r.x + r.width) < 0, r.x + r.width, r.x, r.width);
+        }
+        return (r.x + r.width) < 0;
+    }
+
+    let newStone = () => {
+        points = points + 1;
+        stone.style.display = 'block'
+        stone.style.bottom = document.body.offsetHeight * Math.random() / 3;
+        stone.style.left = worldMoved + document.body.offsetWidth;
+    }    
+
+    let showOverlay = () => {
+        overlay.classList.add('visible'); // показываем сообщение о проигыше
+    }
+
+    let restart = () => {
+        reset(); // сбрасываем состояние
+        overlay.classList.remove('visible'); // убираем сообщение о проигыше
+        loop(); // запустим игровой цикл
+        newStone();
+    }
+
+    renderFrame = () => {
+        frame = frame + 1; // прибавим счетчик кадров
+        worldMoved = worldMoved + worldSpeed; 
+        pointsElement.innerText = `Очки: ${points}`;
+        world.style.transform = `translateX(${-worldMoved}px)`;
+        background.style.transform = `translateX(${worldMoved - (worldMoved + worldSpeed) % document.body.offsetWidth}px)`;
+        if (bottom > 0) {
+            speed = speed - 1;
+        }
+        bottom = bottom + speed;
+        if (bottom <= 0 && speed <= 0) {
+            speed = 0;
+            bottom = 0;
+        }
+        hero.style.bottom = bottom;
+        let heroRect = hero.getBoundingClientRect();
+        let stoneRect= stone.getBoundingClientRect();
+        if (isBehind(stoneRect)) {
+            setTimeout(newStone, 0)
+        }  
+        if (intersects(heroRect, stoneRect)) {
+            pause();
+            showOverlay();
+        }
+    }
+
+    loop = () => {
+        requestAnimationFrame(() => {
+            renderFrame(); // пересчитаем кадр
+            if (!stopped) { // если игра не остановлена
+                loop(); // перейдём к следующему кадру
+            }
+        })
+    }
+
+    document.addEventListener('keypress', (evt) => { // При нажатии на кнопку
+        if (evt.code === 'Space') { // если нажали пробел
+            if (bottom === 0) {
+                speed = speed + 30; // увеличим скорость
+            }
+        }
+    })
+
+    restartButton.addEventListener('click', (evt) => {
+        restart();
+    })
+
+    restart(); 
+
+    
+    
+</script>
